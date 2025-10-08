@@ -1,73 +1,52 @@
 package org.elasticsearch.index.analysis;
 
-import java.net.URI;
-
-import java.io.File;
-import java.io.FileInputStream;
-
 import eu.hlavki.text.lemmagen.api.Lemmatizer;
 import eu.hlavki.text.lemmagen.LemmatizerFactory;
-
 import org.apache.lucene.analysis.TokenStream;
-
-import org.elasticsearch.env.Environment;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.IndexSettings;
 
+import java.io.InputStream;
+import java.util.Locale;
+
 public class LemmagenFilterFactory extends AbstractTokenFilterFactory {
 
-  private Lemmatizer lemmatizer;
-  static final String DEFAULT_DIRECTORY = "lemmagen";
+    private final Lemmatizer lemmatizer;
+    static final String DEFAULT_DIRECTORY = "lemmagen";
+    static final String DEFAULT_LEXICON = "ru";
 
-  public LemmagenFilterFactory(Environment env, String name, Settings settings) {
+    public LemmagenFilterFactory(IndexSettings indexSettings, String name, Settings settings) {
+        super(name, settings);
 
-    super(name, settings);
+        String lexicon = settings.get("lexicon", DEFAULT_LEXICON);
 
-    String lexicon = settings.get("lexicon", null);
-    String lexiconPath = settings.get("lexicon_path", null);
-
-    if (lexicon == null && lexiconPath == null) {
-      throw new IllegalArgumentException(
-          "You need to specify lexicon or lexicon_path option in the token filter configuration");
+        this.lemmatizer = getLemmatizerFromClasspath(lexicon);
     }
 
-    if (lexicon != null && lexiconPath != null) {
-      throw new IllegalArgumentException("Both lexicon and lexicon_path can't be specified");
+    private Lemmatizer getLemmatizerFromClasspath(String lexicon) {
+        String filename = lexicon.toLowerCase(Locale.ROOT);
+        if (!filename.endsWith(".lem")) {
+            filename += ".lem";
+        }
+        String resourcePath = DEFAULT_DIRECTORY + "/" + filename;
+
+        InputStream is = getClass().getClassLoader().getResourceAsStream(resourcePath);
+        if (is == null) {
+            throw new IllegalArgumentException(
+                "Lemmagen dictionary not found in plugin resources: " + resourcePath +
+                ". Please ensure the .lem file is placed in src/main/resources/lemmagen/ and rebuild the plugin."
+            );
+        }
+
+        try {
+            return LemmatizerFactory.read(is);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Failed to load lemmatizer from resource: " + resourcePath, e);
+        }
     }
 
-    if (lexicon != null) {
-      this.lemmatizer = getLemmatizer(lexicon, env);
+    @Override
+    public TokenStream create(TokenStream tokenStream) {
+        return new LemmagenFilter(tokenStream, lemmatizer);
     }
-
-    if (lexiconPath != null) {
-      this.lemmatizer = getLemmatizer(env.configFile().resolve(lexiconPath).toUri());
-    }
-
-  }
-
-  public Lemmatizer getLemmatizer(String lexicon, Environment env) {
-    return getLemmatizer(env.configFile().resolve(getLexiconDefaultPath(lexicon)).toUri());
-  }
-
-  public Lemmatizer getLemmatizer(URI lexiconPath) {
-    try {
-      File lexiconFile = new File(lexiconPath);
-      return LemmatizerFactory.read(new FileInputStream(lexiconFile));
-    } catch (Exception e) {
-      throw new IllegalArgumentException("Can't initialize lemmatizer from resource path " + lexiconPath.toString(), e);
-    }
-  }
-
-  public TokenStream create(TokenStream tokenStream) {
-    return new LemmagenFilter(tokenStream, lemmatizer);
-  }
-
-  private String getLexiconDefaultPath(String lexicon) {
-    if (lexicon.endsWith(".lem")) {
-      return DEFAULT_DIRECTORY + "/" + lexicon;
-    } else {
-      return DEFAULT_DIRECTORY + "/" + lexicon + ".lem";
-    }
-  }
-
 }

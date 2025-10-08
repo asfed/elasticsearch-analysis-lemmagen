@@ -25,11 +25,25 @@
             </includes>
         </dependencySet>
     </dependencySets>
+    <fileSets>
+        <fileSet>
+            <directory>src/main/resources</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>META-INF/services/**</include>
+                <include>lemmagen/**</include>
+            </includes>
+        </fileSet>
+    </fileSets>
     <files>
         <file>
             <source>plugin-descriptor.properties</source>
             <outputDirectory>/</outputDirectory>
             <filtered>true</filtered>
+        </file>
+        <file>
+            <source>src/main/resources/es-plugin.properties</source>
+            <outputDirectory>/</outputDirectory>
         </file>
     </files>
 </assembly>
