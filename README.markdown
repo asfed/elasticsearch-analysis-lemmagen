@@ -1,7 +1,9 @@
 # Changes
 
 The plugin has been modified to work with Elasticsearch version 8.18.3.
+
 Lexicon (.lem) files are now embedded as resources and loaded from the classpath.
+
 Plugin initialization has been updated, and English (en) is set as the default language. The default lexicon is included in the project at /src/main/resources/lemmagen/en.lem.
 To add support for a new language (e.g., Russian), place the corresponding .lem file (e.g., ru.lem) into /src/main/resources/lemmagen/ and rebuild the plugin.
 
