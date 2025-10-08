@@ -13,7 +13,7 @@ public class LemmagenFilterFactory extends AbstractTokenFilterFactory {
 
     private final Lemmatizer lemmatizer;
     static final String DEFAULT_DIRECTORY = "lemmagen";
-    static final String DEFAULT_LEXICON = "ru";
+    static final String DEFAULT_LEXICON = "en";
 
     public LemmagenFilterFactory(IndexSettings indexSettings, String name, Settings settings) {
         super(name, settings);
